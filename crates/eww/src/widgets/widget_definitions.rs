@@ -80,6 +80,7 @@ pub const BUILTIN_WIDGET_NAMES: &[&str] = &[
     WIDGET_NAME_REVEALER,
     WIDGET_NAME_SCROLL,
     WIDGET_NAME_OVERLAY,
+    WIDGET_NAME_ICON,
 ];
 
 //// widget definitions
@@ -107,6 +108,7 @@ pub(super) fn widget_use_to_gtk_widget(bargs: &mut BuilderArgs) -> Result<gtk::W
         WIDGET_NAME_REVEALER => build_gtk_revealer(bargs)?.upcast(),
         WIDGET_NAME_SCROLL => build_gtk_scrolledwindow(bargs)?.upcast(),
         WIDGET_NAME_OVERLAY => build_gtk_overlay(bargs)?.upcast(),
+        WIDGET_NAME_ICON => build_gtk_icon(bargs)?.upcast(),
         _ => {
             return Err(DiagError(gen_diagnostic! {
                 msg = format!("referenced unknown widget `{}`", bargs.widget_use.name),
@@ -1015,6 +1017,24 @@ fn build_graph(bargs: &mut BuilderArgs) -> Result<super::graph::Graph> {
         prop(line_style: as_string) { w.set_property("line-style", &line_style); },
     });
     Ok(w)
+}
+
+const WIDGET_NAME_ICON: &str = "icon";
+/// @widget icon
+/// @desc A widget that displays an icon from the current GTK icon theme.
+fn build_gtk_icon(bargs: &mut BuilderArgs) -> Result<gtk::Image> {
+    let gtk_widget = gtk::Image::new();
+    def_widget!(bargs, _g, gtk_widget, {
+        // @prop name - internal name of the icon
+        // @prop icon-size - width/height of the icon, in pixels
+        prop(name: as_string, icon_size: as_i32 = -1) {
+            let theme = gtk::IconTheme::default().unwrap();
+            let flags = gtk::IconLookupFlags::empty();
+            let pixbuf = theme.load_icon(&name, icon_size, flags)?;
+            gtk_widget.set_from_pixbuf(pixbuf.as_ref());
+        }
+    });
+    Ok(gtk_widget)
 }
 
 /// @var orientation - "vertical", "v", "horizontal", "h"
